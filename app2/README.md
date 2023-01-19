@@ -1,2 +1,2 @@
 # iOS Sample App
-For bitrise example apps
+For bitrise monorepo example apps - App 2
