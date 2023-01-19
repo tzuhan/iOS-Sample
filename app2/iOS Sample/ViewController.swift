@@ -17,7 +17,7 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
         myTextView = UITextView(
           frame: CGRect(x: 0, y: 0, width: 250, height: 200))
-        myTextView.text = "Home View screen text"
+        myTextView.text = "Home View screen text 2"
         myTextView.backgroundColor = UIColor.darkGray
         myTextView.textColor = UIColor.white
         let fullScreenSize = UIScreen.main.bounds.size
