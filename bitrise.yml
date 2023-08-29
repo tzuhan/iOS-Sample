@@ -10,10 +10,6 @@ trigger_map:
 - pull_request_target_branch: story/*
   workflow: app2.primary
 workflows:
-  yml-workflow:
-    steps:
-    - activate-ssh-key@4:
-        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
   app1.primary:
     steps:
     - activate-ssh-key@4:
