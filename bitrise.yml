@@ -1,0 +1,444 @@
+---
+format_version: '11'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: ios
+trigger_map:
+- push_branch: master
+  workflow: app1.primary
+- pull_request_target_branch: master
+  workflow: app1.primary
+- pull_request_target_branch: story/*
+  workflow: app2.primary
+workflows:
+  yml-workflow:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+  app1.primary:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8: {}
+    - cache-pull@2: {}
+    - certificate-and-profile-installer@1: {}
+    - cocoapods-install@2:
+        inputs:
+        - source_root_path: "$BITRISE_SOURCE_DIR/app1/"
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+
+            # xcrun xctrace list devices 2>&1: print out all available simulator
+            # awk -F " " '{print $6}': print out the UID of iPhone 8 Plus simulators
+            # td -d "(): remove parentheses
+            # tail -1: the simulators are sorted ascendingly, based on the OS version. This will print out the latest one.
+            IOS_SIMULATOR_UDID=`xcrun xctrace list devices 2>&1 | grep "iPhone 8 Plus" | awk -F " " '{print $6}' | tr -d "()" |tail -1`
+            echo $IOS_SIMULATOR_UDID
+
+            # warm up the simulator before testing
+            open -a Simulator --args -CurrentDeviceUDID $IOS_SIMULATOR_UDID
+    - xcode-test@4.7:
+        inputs:
+        - project_path: app1/$BITRISE_PROJECT_PATH
+        - scheme: "$BITRISE_SCHEME"
+    - deploy-to-bitrise-io@2.2: {}
+    - cache-push@2: {}
+  app2.primary:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8.1: {}
+    - cache-pull@2: {}
+    - certificate-and-profile-installer@1: {}
+    - cocoapods-install@2:
+        inputs:
+        - podfile_path: "$BITRISE_SOURCE_DIR/app2/Podfile"
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+
+            # xcrun xctrace list devices 2>&1: print out all available simulator
+            # awk -F " " '{print $6}': print out the UID of iPhone 8 Plus simulators
+            # td -d "(): remove parentheses
+            # tail -1: the simulators are sorted ascendingly, based on the OS version. This will print out the latest one.
+            IOS_SIMULATOR_UDID=`xcrun xctrace list devices 2>&1 | grep "iPhone 8 Plus" | awk -F " " '{print $6}' | tr -d "()" |tail -1`
+            echo $IOS_SIMULATOR_UDID
+
+            # warm up the simulator before testing
+            open -a Simulator --args -CurrentDeviceUDID $IOS_SIMULATOR_UDID
+    - xcode-test@4.7:
+        inputs:
+        - project_path: app2/$BITRISE_PROJECT_PATH
+        - scheme: "$BITRISE_SCHEME"
+    - deploy-to-bitrise-io@2.3: {}
+    - cache-push@2: {}
+  test-auto-signing:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8.1: {}
+    - cache-pull@2: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+            RUBY_VERSION=3.1.3
+            asdf install ruby $RUBY_VERSION
+            asdf global ruby $RUBY_VERSION
+
+            gem install bundler -v 2.3.4
+            ls app1/
+    - manage-ios-code-signing@1:
+        inputs:
+        - scheme: "$BITRISE_APP1_SCHEME"
+        - project_path: "$BITRISE_APP1_PROJECT_PATH"
+    - cocoapods-install@2: {}
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+
+            # xcrun xctrace list devices 2>&1: print out all available simulator
+            # awk -F " " '{print $6}': print out the UID of iPhone 8 Plus simulators
+            # td -d "(): remove parentheses
+            # tail -1: the simulators are sorted ascendingly, based on the OS version. This will print out the latest one.
+            IOS_SIMULATOR_UDID=`xcrun xctrace list devices 2>&1 | grep "iPhone 8 Plus" | awk -F " " '{print $6}' | tr -d "()" |tail -1`
+            echo $IOS_SIMULATOR_UDID
+
+            # warm up the simulator before testing
+            open -a Simulator --args -CurrentDeviceUDID $IOS_SIMULATOR_UDID
+    - xcode-test@4.7:
+        inputs:
+        - project_path: "$BITRISE_PROJECT_PATH"
+        - scheme: "$BITRISE_SCHEME"
+    - deploy-to-bitrise-io@2.3: {}
+    - cache-push@2: {}
+    meta:
+      bitrise.io:
+        stack: osx-xcode-14.1.x-ventura
+        machine_type_id: g2-m1.4core
+  test-cocoapods:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8.1: {}
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: "#!/usr/bin/env bash\n# fail if any commands fails\nset -e\n# make
+            pipelines' return status equal the last command to exit with a non-zero
+            status, or zero if all commands exit successfully\nset -o pipefail\n#
+            debug log\nset -x\n\n# write your script here\necho \"Hello World!\"\n\n#
+            or run a script from your repository, like:\n# bash ./path/to/script.sh\n#
+            not just bash, e.g.:\n# ruby ./path/to/script.rb\n\nRUBY_VERSION=2.7.5\nwhich
+            asdf\nif [[ $? == 0 ]]; then\n  asdf plugin update ruby\n  asdf install
+            ruby $RUBY_VERSION\n  asdf global ruby $RUBY_VERSION\nfi\n\n# Confirm
+            that the ruby version is correct\nruby -v \n\n# Reinstall the Cocoapods
+            and Fastlane\ngem install cocoapods\ngem install fastlane"
+    - cocoapods-install@2:
+        inputs:
+        - podfile_path: "$BITRISE_SOURCE_DIR/app2/Podfile"
+    - fastlane@3:
+        inputs:
+        - lane: test
+  test-file-downloader:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+
+            cd $BITRISE_SOURCE_DIR
+            mkdir download
+    - file-downloader@1:
+        inputs:
+        - destination: t.md
+        - source: "$BITRISEIO_test_file_URL"
+    - file-downloader@1:
+        inputs:
+        - destination: download/
+        - source: "$BITRISEIO_test_file_URL"
+  test-subworkflow:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - script@1:
+        inputs:
+        - content: |-
+            #!/bin/bash
+
+            set -e
+
+            echo "Sysctl to check if running under Rosetta"
+            sysctl sysctl.proc_translated
+
+            # install brew under Rosetta
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" 2>&1
+
+            # override brew
+
+            echo 'alias brew="/usr/local/bin/brew"' >> ~/.zshenv
+
+            # install ruby@3.1 under Rosetta
+            arch -x86_64 /usr/local/bin/brew install ruby@3.1
+            # set ruby in environment
+            echo 'export PATH="/usr/local/opt/ruby@3.1/bin:$PATH"' >> ~/.zshenv
+
+            # might need
+            export LDFLAGS="-L/usr/local/opt/ruby@3.1/lib"
+            export CPPFLAGS="-I/usr/local/opt/ruby@3.1/include"
+            export PKG_CONFIG_PATH="/usr/local/opt/ruby@3.1/lib/pkgconfig"
+
+            # export these with envman
+            envman add --key LDFLAGS --value "$LDFLAGS"
+            envman add --key CPPFLAGS --value "$CPPFLAGS"
+
+
+            brew install nvm
+
+            mkdir $HOME/.nvm
+
+            export NVM_DIR="$HOME/.nvm"
+              [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+              [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+
+            echo 'export NVM_DIR='"$HOME/.nvm"'
+              [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+              [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"' >> ~/.zshenv
+
+            nvm install 12.22.12
+
+            nvm use 12.22.12
+
+            nvm alias default 12.22.12
+
+            node -v
+
+            envman add --key PATH --value "$PATH"
+
+            envman add --key NVM_DIR --value "$NVM_DIR"
+    - npm@1:
+        inputs:
+        - command: install -g @rampjs/cli
+    - script@1:
+        inputs:
+        - content: |-
+            git config --global http.sslVerify false
+            echo insecure >> $HOME/.curlrc
+            export GIT_SSL_NO_VERIFY=true
+
+            cd $BITRISE_SOURCE_DIR
+            ramp bitrise:ios --workflow=${WORKFLOW_ID}
+    meta:
+      bitrise.io:
+        stack: osx-xcode-14.2.x-ventura
+        machine_type_id: g2-m1.4core
+  test-system-folder-cache:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - restore-cache@1:
+        inputs:
+        - key: user-local-cache
+    - script@1:
+        inputs:
+        - content: |-
+            #!/bin/bash
+
+            set -e
+
+            echo "Sysctl to check if running under Rosetta"
+            sysctl sysctl.proc_translated
+
+            # install brew under Rosetta
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" 2>&1
+
+            # override brew
+
+            echo 'alias brew="/usr/local/bin/brew"' >> ~/.zshenv
+
+            # install ruby@3.1 under Rosetta
+            arch -x86_64 /usr/local/bin/brew install ruby@3.1
+            # set ruby in environment
+            echo 'export PATH="/usr/local/opt/ruby@3.1/bin:$PATH"' >> ~/.zshenv
+
+            # might need
+            export LDFLAGS="-L/usr/local/opt/ruby@3.1/lib"
+            export CPPFLAGS="-I/usr/local/opt/ruby@3.1/include"
+            export PKG_CONFIG_PATH="/usr/local/opt/ruby@3.1/lib/pkgconfig"
+
+            # export these with envman
+            envman add --key LDFLAGS --value "$LDFLAGS"
+            envman add --key CPPFLAGS --value "$CPPFLAGS"
+
+            ls -la /usr/local/
+            echo "test" > ~/.test
+            sleep 100
+    - save-cache@1:
+        inputs:
+        - paths: |-
+            /usr/local/bin/brew
+            /usr/local/share/doc/homebrew
+            /usr/local/share/man/man1/brew.1
+            /usr/local/share/zsh/site-functions/_brew
+            /usr/local/etc/bash_completion.d/brew
+            /usr/local/Homebrew
+            /usr/local/etc
+            /usr/local/include
+            /usr/local/lib
+            /usr/local/sbin
+            /usr/local/var
+            /usr/local/opt
+            /usr/local/share/zsh
+            /usr/local/share/zsh/site-functions
+            /usr/local/var/homebrew
+            /usr/local/var/homebrew/linked
+            /usr/local/Cellar
+            /usr/local/Caskroom
+            /usr/local/Frameworks
+            ~/.zshenv
+        - key: user-local-cache
+    meta:
+      bitrise.io:
+        stack: osx-xcode-14.2.x-ventura-rosetta
+        machine_type_id: g2-m1.4core
+  testing_env_vars:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - script@1:
+        title: Do anything with Script step
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+
+            echo "Sysctl to check if running under Rosetta"
+            sysctl sysctl.proc_translated
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+
+            # xcrun xctrace list devices 2>&1: print out all available simulator
+            # awk -F " " '{print $6}': print out the UID of iPhone 8 Plus simulators
+            # td -d "(): remove parentheses
+            # tail -1: the simulators are sorted ascendingly, based on the OS version. This will print out the latest one.
+            IOS_SIMULATOR_UDID=`xcrun xctrace list devices 2>&1 | grep "iPhone 8 Plus" | awk -F " " '{print $6}' | tr -d "()" |tail -1`
+            echo $IOS_SIMULATOR_UDID
+
+            # warm up the simulator before testing
+            open -a Simulator --args -CurrentDeviceUDID $IOS_SIMULATOR_UDID
+    - deploy-to-bitrise-io@2.3: {}
+meta:
+  bitrise.io:
+    stack: osx-xcode-14.3.x-edge
+    machine_type_id: g2-m1.4core
+app:
+  envs:
+  - opts:
+      is_expand: false
+    BITRISE_PROJECT_PATH: iOS Sample.xcworkspace
+  - opts:
+      is_expand: false
+    BITRISE_SCHEME: iOS Sample
+  - opts:
+      is_expand: false
+    BITRISE_EXPORT_METHOD: enterprise
+  - opts:
+      is_expand: false
+    BITRISE_APP1_PROJECT_PATH: app1/iOS Sample.xcworkspace
+  - opts:
+      is_expand: false
+    BITRISE_APP1_SCHEME: iOS Sample
+  - opts:
+      is_expand: false
+    WORKFLOW_ID: testing_env_vars
+
